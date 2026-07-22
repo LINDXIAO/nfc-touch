@@ -329,12 +329,27 @@ function fallbackCopy(text) {
 }
 
 // ====== 唤起 App（带兜底） ======
+function isIOS() {
+  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+}
+
 function openApp(scheme, fallback) {
   if (isWechat()) {
-    // 微信里 scheme 会被拦截，直接走网页版
     if (fallback) window.location.href = fallback;
     return;
   }
+  // iOS 用 location.href，安卓用 iframe
+  if (isIOS()) {
+    var start = Date.now();
+    window.location.href = scheme;
+    setTimeout(function(){
+      if (Date.now() - start < 2500 && fallback) {
+        window.location.href = fallback;
+      }
+    }, 2500);
+    return;
+  }
+  // Android
   var start = Date.now();
   var ifr = document.createElement('iframe');
   ifr.src = scheme;
@@ -392,8 +407,8 @@ function publishDouyin() {
 }
 
 function publishXhs() {
-  // xhsdiscover:// 基础唤起 + POI 短链作为兜底
-  showPublishModal('xhs', TEXT_XHS, 'xhsdiscover://', XHS_POI);
+  // xhsdiscover://js_share_sdk 来自小红书官方 SDK
+  showPublishModal('xhs', TEXT_XHS, 'xhsdiscover://js_share_sdk', XHS_POI);
 }
 
 function searchTip(platform) {
