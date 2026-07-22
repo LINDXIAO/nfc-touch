@@ -193,6 +193,42 @@
   }
   .modal-btn-copy.xhs { background: #ff2442; }
   .modal-btn-copy.douyin { background: #161823; }
+  .modal-status {
+    min-height: 22px;
+    margin-top: 10px;
+    font-size: 13px;
+    line-height: 1.6;
+    text-align: center;
+    color: #8a8f99;
+  }
+  .modal-status.success { color: #00a870; }
+  .modal-status.error { color: #d46b08; }
+  .modal-open {
+    display: block;
+    margin-top: 10px;
+    padding: 12px;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 500;
+    text-align: center;
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .modal-open.douyin { background: #161823; }
+  .modal-open.xhs { background: #ff2442; }
+  .modal-open.disabled {
+    opacity: 0.45;
+    pointer-events: none;
+  }
+  .modal-fallback {
+    display: block;
+    margin-top: 10px;
+    color: #4e5969;
+    font-size: 13px;
+    text-align: center;
+    text-decoration: underline;
+  }
 </style>
 </head>
 <body>
@@ -223,7 +259,7 @@
     <button class="btn btn-xhs" onclick="publishXhs()">发小红书</button>
   </div>
   <div class="section-desc">
-    点击后先预览文案，确认后复制并跳转到 App
+    点击后先复制文案，再打开 App 发布
   </div>
 </div>
 
@@ -264,14 +300,17 @@
 <div class="toast" id="toast"></div>
 
 <!-- 文案预览弹窗 -->
-<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-title" id="modalTitle">文案预览</div>
     <textarea class="modal-textarea" id="modalText" readonly></textarea>
     <div class="modal-actions">
       <button class="modal-btn modal-btn-close" onclick="closeModal()">关闭</button>
-      <button class="modal-btn modal-btn-copy" id="modalCopyBtn" onclick="doCopyAndJump()">复制文案并跳转</button>
+      <button class="modal-btn modal-btn-copy" id="modalCopyBtn" onclick="doCopy()">复制文案</button>
     </div>
+    <div class="modal-status" id="modalStatus" aria-live="polite">请先复制文案，再打开 App 发布</div>
+    <a class="modal-open disabled" id="modalOpenBtn" href="#" aria-disabled="true" onclick="handleAppOpen(event)">打开 App</a>
+    <a class="modal-fallback" id="modalFallbackBtn" href="#">无法打开 App？使用网页版</a>
   </div>
 </div>
 
@@ -304,7 +343,9 @@ function showToast(msg) {
 // ====== 剪贴板（兼容微信） ======
 function copyText(text) {
   if (navigator.clipboard && navigator.clipboard.writeText && !isWechat()) {
-    return navigator.clipboard.writeText(text).catch(function(){
+    return navigator.clipboard.writeText(text).then(function(){
+      return true;
+    }).catch(function(){
       return fallbackCopy(text);
     });
   }
@@ -328,49 +369,40 @@ function fallbackCopy(text) {
   return ok;
 }
 
-// ====== 唤起 App（带兜底） ======
-function isIOS() {
-  return /iphone|ipad|ipod/i.test(navigator.userAgent);
-}
-
-function openApp(scheme, fallback) {
-  if (isWechat()) {
-    if (fallback) window.location.href = fallback;
-    return;
-  }
-  // iOS 用 location.href，安卓用 iframe
-  if (isIOS()) {
-    var start = Date.now();
-    window.location.href = scheme;
-    setTimeout(function(){
-      if (Date.now() - start < 2500 && fallback) {
-        window.location.href = fallback;
-      }
-    }, 2500);
-    return;
-  }
-  // Android
-  var start = Date.now();
-  var ifr = document.createElement('iframe');
-  ifr.src = scheme;
-  ifr.style.display = 'none';
-  document.body.appendChild(ifr);
-  setTimeout(function(){
-    document.body.removeChild(ifr);
-    if (Date.now() - start < 2500 && fallback) {
-      window.location.href = fallback;
-    }
-  }, 2500);
-}
-
 // ====== 弹窗 ======
 var pendingJump = null; // { platform, scheme, fallback }
+var launchTimer = null;
+var launchVisibilityHandler = null;
+
+function clearLaunchDetection() {
+  if (launchTimer) {
+    clearTimeout(launchTimer);
+    launchTimer = null;
+  }
+  if (launchVisibilityHandler) {
+    document.removeEventListener('visibilitychange', launchVisibilityHandler);
+    launchVisibilityHandler = null;
+  }
+}
 
 function showPublishModal(platform, text, scheme, fallback) {
   document.getElementById('modalTitle').textContent = platform === 'douyin' ? '发抖音文案' : '发小红书文案';
   document.getElementById('modalText').value = text;
   var copyBtn = document.getElementById('modalCopyBtn');
   copyBtn.className = 'modal-btn modal-btn-copy ' + platform;
+  copyBtn.disabled = false;
+  copyBtn.textContent = '复制文案';
+  var status = document.getElementById('modalStatus');
+  status.className = 'modal-status';
+  status.textContent = '请先复制文案，再打开 App 发布';
+  var openBtn = document.getElementById('modalOpenBtn');
+  openBtn.className = 'modal-open ' + platform + ' disabled';
+  openBtn.textContent = platform === 'douyin' ? '打开抖音' : '打开小红书';
+  openBtn.href = scheme;
+  openBtn.setAttribute('aria-disabled', 'true');
+  var fallbackBtn = document.getElementById('modalFallbackBtn');
+  fallbackBtn.href = fallback;
+  fallbackBtn.textContent = platform === 'douyin' ? '无法打开抖音？使用网页版' : '无法打开小红书？打开酒店页面';
   document.getElementById('modalOverlay').classList.add('show');
   // 自动选中文案
   setTimeout(function(){
@@ -383,22 +415,77 @@ function showPublishModal(platform, text, scheme, fallback) {
 
 function closeModal(e) {
   if (e && e.target !== document.getElementById('modalOverlay')) return;
+  clearLaunchDetection();
   document.getElementById('modalOverlay').classList.remove('show');
   pendingJump = null;
 }
 
-function doCopyAndJump() {
+function setOpenEnabled(enabled) {
+  var openBtn = document.getElementById('modalOpenBtn');
+  openBtn.classList.toggle('disabled', !enabled);
+  openBtn.setAttribute('aria-disabled', enabled ? 'false' : 'true');
+}
+
+function doCopy() {
   if (!pendingJump) return;
-  var text = pendingJump.text;
-  var scheme = pendingJump.scheme;
-  var fallback = pendingJump.fallback;
-  copyText(text).then(function(){
-    showToast('文案已复制，正在跳转...');
-    setTimeout(function(){
-      openApp(scheme, fallback);
-    }, 300);
+  var copyBtn = document.getElementById('modalCopyBtn');
+  var status = document.getElementById('modalStatus');
+  copyBtn.disabled = true;
+  copyText(pendingJump.text).then(function(ok){
+    copyBtn.disabled = false;
+    setOpenEnabled(true);
+    if (ok) {
+      copyBtn.textContent = '已复制';
+      status.className = 'modal-status success';
+      status.textContent = '文案已复制，现在可以打开 App 发布';
+      showToast('文案已复制');
+      return;
+    }
+    copyBtn.textContent = '重新复制';
+    status.className = 'modal-status error';
+    status.textContent = '自动复制失败，请长按上方文案手动复制，再打开 App';
+    var ta = document.getElementById('modalText');
+    ta.focus();
+    ta.select();
+  }).catch(function(){
+    copyBtn.disabled = false;
+    setOpenEnabled(true);
+    copyBtn.textContent = '重新复制';
+    status.className = 'modal-status error';
+    status.textContent = '自动复制失败，请长按上方文案手动复制，再打开 App';
   });
-  closeModal();
+}
+
+function handleAppOpen(e) {
+  var openBtn = document.getElementById('modalOpenBtn');
+  var status = document.getElementById('modalStatus');
+  if (!pendingJump || openBtn.getAttribute('aria-disabled') === 'true') {
+    e.preventDefault();
+    status.className = 'modal-status error';
+    status.textContent = '请先复制文案';
+    return;
+  }
+  if (isWechat()) {
+    e.preventDefault();
+    document.getElementById('wechatTip').classList.add('show');
+    status.className = 'modal-status error';
+    status.textContent = '微信可能拦截 App 跳转，请点击下方网页入口，或在浏览器中打开本页';
+    return;
+  }
+  status.className = 'modal-status';
+  status.textContent = '正在尝试打开 App；如未打开，请使用下方网页入口';
+  clearLaunchDetection();
+  launchVisibilityHandler = function(){
+    if (document.hidden) clearLaunchDetection();
+  };
+  document.addEventListener('visibilitychange', launchVisibilityHandler);
+  launchTimer = setTimeout(function(){
+    if (!document.hidden) {
+      status.className = 'modal-status error';
+      status.textContent = '未检测到 App 打开，请使用下方网页入口';
+    }
+    clearLaunchDetection();
+  }, 1800);
 }
 
 // ====== 业务动作 ======
@@ -407,7 +494,7 @@ function publishDouyin() {
 }
 
 function publishXhs() {
-  // xhsdiscover://post_note 直达发布页，文案已复制剪贴板
+  // post_note 仅作为增强唤起方式；页面始终保留酒店 POI 网页兜底
   showPublishModal('xhs', TEXT_XHS, 'xhsdiscover://post_note', XHS_POI);
 }
 

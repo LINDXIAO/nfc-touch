@@ -1,0 +1,7 @@
+{
+  "name": "nfc-touch",
+  "private": true,
+  "scripts": {
+    "test": "node --test"
+  }
+}
