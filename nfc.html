@@ -126,6 +126,73 @@
     color: #8a8f99;
     font-size: 12px;
   }
+
+  /* 弹窗 */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 999;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: #fff;
+    border-radius: 14px;
+    padding: 24px 20px 20px;
+    width: calc(100% - 48px);
+    max-width: 400px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .modal-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 14px;
+    text-align: center;
+  }
+  .modal-textarea {
+    width: 100%;
+    min-height: 120px;
+    border: 1px solid #e5e6eb;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 14px;
+    color: #1f2329;
+    resize: none;
+    background: #f9f9fb;
+    font-family: inherit;
+    line-height: 1.7;
+  }
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .modal-btn {
+    flex: 1;
+    padding: 12px;
+    border-radius: 8px;
+    border: none;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .modal-btn:active { transform: scale(0.97); opacity: 0.9; }
+  .modal-btn-close {
+    background: #f2f3f5;
+    color: #4e5969;
+  }
+  .modal-btn-copy {
+    background: #1677ff;
+    color: #fff;
+  }
+  .modal-btn-copy.xhs { background: #ff2442; }
+  .modal-btn-copy.douyin { background: #161823; }
 </style>
 </head>
 <body>
@@ -156,8 +223,7 @@
     <button class="btn btn-xhs" onclick="publishXhs()">发小红书</button>
   </div>
   <div class="section-desc">
-    小红书：直接跳视频发布页，文案已复制剪贴板，长按粘贴<br>
-    抖音：文案已复制剪贴板，App 内点击「+」发布视频后长按粘贴
+    点击后先预览文案，确认后复制并跳转到 App
   </div>
 </div>
 
@@ -196,6 +262,18 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- 文案预览弹窗 -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title" id="modalTitle">文案预览</div>
+    <textarea class="modal-textarea" id="modalText" readonly></textarea>
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn-close" onclick="closeModal()">关闭</button>
+      <button class="modal-btn modal-btn-copy" id="modalCopyBtn" onclick="doCopyAndJump()">复制文案并跳转</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ====== 链接配置（方便你以后改） ======
@@ -270,25 +348,52 @@ function openApp(scheme, fallback) {
   }, 2500);
 }
 
+// ====== 弹窗 ======
+var pendingJump = null; // { platform, scheme, fallback }
+
+function showPublishModal(platform, text, scheme, fallback) {
+  document.getElementById('modalTitle').textContent = platform === 'douyin' ? '发抖音文案' : '发小红书文案';
+  document.getElementById('modalText').value = text;
+  var copyBtn = document.getElementById('modalCopyBtn');
+  copyBtn.className = 'modal-btn modal-btn-copy ' + platform;
+  document.getElementById('modalOverlay').classList.add('show');
+  // 自动选中文案
+  setTimeout(function(){
+    var ta = document.getElementById('modalText');
+    ta.focus();
+    ta.select();
+  }, 100);
+  pendingJump = { scheme: scheme, fallback: fallback, text: text };
+}
+
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('modalOverlay')) return;
+  document.getElementById('modalOverlay').classList.remove('show');
+  pendingJump = null;
+}
+
+function doCopyAndJump() {
+  if (!pendingJump) return;
+  var text = pendingJump.text;
+  var scheme = pendingJump.scheme;
+  var fallback = pendingJump.fallback;
+  copyText(text).then(function(){
+    showToast('文案已复制，正在跳转...');
+    setTimeout(function(){
+      openApp(scheme, fallback);
+    }, 300);
+  });
+  closeModal();
+}
+
 // ====== 业务动作 ======
 function publishDouyin() {
-  copyText(TEXT_DOUYIN).then(function(){
-    showToast('文案已复制，请在抖音内点击「+」发布视频后长按粘贴');
-    setTimeout(function(){
-      // 抖音无公开 scheme 直达发布页，唤起 App 后需用户手动点「+」
-      openApp('snssdk1128://', DOUYIN_HOME);
-    }, 500);
-  });
+  showPublishModal('douyin', TEXT_DOUYIN, 'snssdk1128://', DOUYIN_HOME);
 }
 
 function publishXhs() {
-  copyText(TEXT_XHS).then(function(){
-    showToast('文案已复制，正在跳转小红书发布页');
-    setTimeout(function(){
-      // xhsdiscover://post_video 直接跳到小红书视频发布页
-      openApp('xhsdiscover://post_video', XHS_POI);
-    }, 500);
-  });
+  // xhsdiscover:// 基础唤起 + POI 短链作为兜底
+  showPublishModal('xhs', TEXT_XHS, 'xhsdiscover://', XHS_POI);
 }
 
 function searchTip(platform) {
