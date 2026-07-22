@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>碰一碰 · 北戴河洲顿庄园酒店</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif;
+    background: #f5f6f8;
+    color: #1f2329;
+    line-height: 1.6;
+    padding: 16px;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  .header {
+    text-align: center;
+    padding: 24px 12px 18px;
+  }
+  .header h1 { font-size: 22px; margin-bottom: 6px; letter-spacing: 0.5px; }
+  .header .sub { font-size: 13px; color: #8a8f99; }
+
+  .wechat-tip {
+    display: none;
+    background: #fff7e6;
+    border: 1px solid #ffd591;
+    color: #d46b08;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 14px;
+    text-align: center;
+  }
+  .wechat-tip.show { display: block; }
+
+  .section {
+    background: #fff;
+    border-radius: 14px;
+    padding: 18px 16px;
+    margin-bottom: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .section-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title::before {
+    content: '';
+    width: 3px;
+    height: 14px;
+    background: #3478f6;
+    border-radius: 2px;
+  }
+  .section-desc {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #8a8f99;
+  }
+
+  .btn-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .btn-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .btn-grid.cols-1 { grid-template-columns: 1fr; }
+
+  .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 14px 10px;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #fff;
+    cursor: pointer;
+    text-decoration: none;
+    transition: transform 0.1s, opacity 0.1s;
+    -webkit-tap-highlight-color: transparent;
+    text-align: center;
+  }
+  .btn:active { transform: scale(0.97); opacity: 0.9; }
+  .btn-douyin { background: #161823; }
+  .btn-xhs { background: #ff2442; }
+  .btn-kuaishou { background: #ff7f24; }
+  .btn-weixin { background: #07c160; }
+  .btn-dianping { background: #ff8a3c; }
+  .btn-group { background: #ff4d4f; }
+  .btn-outline {
+    background: #fff;
+    border: 1px solid #dcdfe6;
+    color: #1f2329;
+  }
+
+  .toast {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.8);
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+    max-width: 80%;
+    text-align: center;
+  }
+  .toast.show { opacity: 1; }
+
+  .footer {
+    text-align: center;
+    padding: 20px 0 30px;
+    color: #8a8f99;
+    font-size: 12px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>北戴河洲顿庄园酒店</h1>
+  <div class="sub">高档型酒店 · 5.0分 · 北戴河区乔庄村葡萄酒庄园</div>
+</div>
+
+<div class="wechat-tip" id="wechatTip">
+  点击右上角 ··· 选择「在浏览器打开」效果更佳
+</div>
+
+<!-- 关注账号 -->
+<div class="section">
+  <div class="section-title">关注账号</div>
+  <div class="btn-grid">
+    <a class="btn btn-douyin" href="https://v.douyin.com/F-T_yOD8I5c/">抖音关注</a>
+    <a class="btn btn-xhs" href="https://xhslink.com/m/5IpJRsIGsXx">小红书关注</a>
+  </div>
+</div>
+
+<!-- 发视频 -->
+<div class="section">
+  <div class="section-title">发视频享福利</div>
+  <div class="btn-grid">
+    <button class="btn btn-douyin" onclick="publishDouyin()">发抖音</button>
+    <button class="btn btn-xhs" onclick="publishXhs()">发小红书</button>
+  </div>
+  <div class="section-desc">
+    点击后文案自动复制到剪贴板，跳转发布页后长按粘贴即可
+  </div>
+</div>
+
+<!-- 团购 -->
+<div class="section">
+  <div class="section-title">团购优惠</div>
+  <div class="btn-grid cols-1">
+    <a class="btn btn-group" href="https://v.douyin.com/bY_PiVlkpQQ/">二号楼轻奢客房 · 双早+水乐园+地标咖啡+投屏</a>
+  </div>
+</div>
+
+<!-- 点评打卡 -->
+<div class="section">
+  <div class="section-title">点评打卡</div>
+  <div class="btn-grid cols-3">
+    <a class="btn btn-xhs" href="https://xhslink.com/m/5IpJRsIGsXx">小红书</a>
+    <a class="btn btn-dianping" href="#" onclick="searchTip('大众点评');return false;">点评</a>
+    <a class="btn btn-douyin" href="https://v.douyin.com/F-T_yOD8I5c/">抖音</a>
+  </div>
+  <div class="section-desc">在 App 内搜索「北戴河洲顿庄园酒店」即可找到商家</div>
+</div>
+
+<!-- 加微信 -->
+<div class="section">
+  <div class="section-title">加微信 / 预订咨询</div>
+  <div class="btn-grid cols-1">
+    <a class="btn btn-weixin" href="weixin://">打开微信</a>
+  </div>
+  <div class="section-desc">
+    客服微信号待填，把 weixin:// 换成企业微信二维码图片或微信号搜索页
+  </div>
+</div>
+
+<div class="footer">
+  碰一碰 · 自用版
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ====== 链接配置（方便你以后改） ======
+var DOUYIN_HOME  = 'https://v.douyin.com/F-T_yOD8I5c/';
+var DOUYIN_GROUP = 'https://v.douyin.com/bY_PiVlkpQQ/';
+var XHS_POI      = 'https://xhslink.com/m/5IpJRsIGsXx';
+
+// ====== 预设文案（多写几条换着用） ======
+var TEXT_DOUYIN = '北戴河洲顿庄园酒店5.0分高档酒店｜水乐园畅玩+双早+地标咖啡+电视投屏，乔庄村葡萄酒庄园里的高性价比度假地 #北戴河旅游 #洲顿庄园 #亲子酒店 #北戴河住宿';
+var TEXT_XHS    = '北戴河住宿推荐｜洲顿庄园酒店5.0分高档型，葡萄酒庄园里度假，水乐园+双早+地标咖啡+电视投屏全都有，性价比绝了 #北戴河 #洲顿庄园 #亲子酒店 #北戴河住宿推荐';
+
+// ====== 环境检测 ======
+function isWechat() {
+  return /MicroMessenger/i.test(navigator.userAgent);
+}
+if (isWechat()) {
+  document.getElementById('wechatTip').classList.add('show');
+}
+
+// ====== Toast ======
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 1800);
+}
+
+// ====== 剪贴板（兼容微信） ======
+function copyText(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText && !isWechat()) {
+    return navigator.clipboard.writeText(text).catch(function(){
+      return fallbackCopy(text);
+    });
+  }
+  return Promise.resolve(fallbackCopy(text));
+}
+
+function fallbackCopy(text) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.top = '-9999px';
+  ta.style.left = '-9999px';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  ta.setSelectionRange(0, text.length);
+  var ok = false;
+  try { ok = document.execCommand('copy'); } catch(e) {}
+  document.body.removeChild(ta);
+  return ok;
+}
+
+// ====== 唤起 App（带兜底） ======
+function openApp(scheme, fallback) {
+  if (isWechat()) {
+    // 微信里 scheme 会被拦截，直接走网页版
+    if (fallback) window.location.href = fallback;
+    return;
+  }
+  var start = Date.now();
+  var ifr = document.createElement('iframe');
+  ifr.src = scheme;
+  ifr.style.display = 'none';
+  document.body.appendChild(ifr);
+  setTimeout(function(){
+    document.body.removeChild(ifr);
+    if (Date.now() - start < 2500 && fallback) {
+      window.location.href = fallback;
+    }
+  }, 2500);
+}
+
+// ====== 业务动作 ======
+function publishDouyin() {
+  copyText(TEXT_DOUYIN).then(function(){
+    showToast('文案已复制，正在跳转抖音');
+    setTimeout(function(){
+      openApp('snssdk1128://', DOUYIN_HOME);
+    }, 500);
+  });
+}
+
+function publishXhs() {
+  copyText(TEXT_XHS).then(function(){
+    showToast('文案已复制，正在跳转小红书');
+    setTimeout(function(){
+      openApp('xhsdiscover://', XHS_POI);
+    }, 500);
+  });
+}
+
+function searchTip(platform) {
+  showToast('请打开' + platform + '搜索：北戴河洲顿庄园酒店');
+}
+</script>
+
+</body>
+</html>
