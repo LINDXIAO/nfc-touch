@@ -491,12 +491,39 @@ function handleAppOpen(e) {
 
 // ====== 业务动作 ======
 function publishDouyin() {
-  showPublishModal('douyin', TEXT_DOUYIN, 'snssdk1128://', DOUYIN_HOME);
+  copyText(TEXT_DOUYIN).then(function(ok) {
+    if (ok) {
+      showToast('文案已复制');
+    } else {
+      showToast('复制失败，请手动复制');
+    }
+    if (isWechat()) {
+      document.getElementById('wechatTip').classList.add('show');
+      showToast('微信可能拦截跳转，请在浏览器中打开本页');
+      return;
+    }
+    setTimeout(function() {
+      window.location.href = 'snssdk1128://';
+    }, 300);
+  });
 }
 
 function publishXhs() {
-  // post_note 仅作为增强唤起方式；页面始终保留酒店 POI 网页兜底
-  showPublishModal('xhs', TEXT_XHS, 'xhsdiscover://post_note', XHS_POI);
+  copyText(TEXT_XHS).then(function(ok) {
+    if (ok) {
+      showToast('文案已复制');
+    } else {
+      showToast('复制失败，请手动复制');
+    }
+    if (isWechat()) {
+      document.getElementById('wechatTip').classList.add('show');
+      showToast('微信可能拦截跳转，请在浏览器中打开本页');
+      return;
+    }
+    setTimeout(function() {
+      window.location.href = 'xhsdiscover://post_note';
+    }, 300);
+  });
 }
 
 function searchTip(platform) {
