@@ -131,40 +131,68 @@ test('legacy iframe and broken timer fallback are removed', () => {
   assert.doesNotMatch(html, /doCopyAndJump/);
 });
 
-test('Douyin flow copies text and triggers app opening after delay', async () => {
+test('Douyin flow requires a successful copy before direct app opening', async () => {
   const { context, elements } = createPageContext({ clipboardResult: true });
-  let redirectUrl = '';
-  context.window.location = {
-    get href() { return ''; },
-    set href(value) { redirectUrl = value; }
-  };
-
   context.publishDouyin();
+
+  assert.equal(elements.modalOpenBtn.href, 'snssdk1128://');
+  assert.equal(elements.modalFallbackBtn.href, context.DOUYIN_HOME);
+  assert.equal(elements.modalOpenBtn.getAttribute('aria-disabled'), 'true');
+
+  context.doCopy();
   await flushPromises();
 
-  assert.equal(elements.toast.textContent, '文案已复制');
+  assert.equal(elements.modalOpenBtn.getAttribute('aria-disabled'), 'false');
+  assert.equal(elements.modalStatus.textContent, '文案已复制，现在可以打开 App 发布');
+  assert.ok(elements.modalStatus.classList.contains('success'));
 });
 
-test('copy failure is reported via toast', async () => {
+test('copy failure is reported honestly and leaves manual recovery available', async () => {
   const { context, elements } = createPageContext({
     clipboardResult: false,
     fallbackCopyResult: false
   });
-
   context.publishXhs();
+  context.doCopy();
   await flushPromises();
 
-  assert.equal(elements.toast.textContent, '复制失败，请手动复制');
+  assert.equal(elements.modalOpenBtn.getAttribute('aria-disabled'), 'false');
+  assert.match(elements.modalStatus.textContent, /自动复制失败/);
+  assert.ok(elements.modalStatus.classList.contains('error'));
+  assert.equal(elements.modalFallbackBtn.href, context.XHS_POI);
 });
 
-test('WeChat blocks custom-scheme navigation and shows tip', async () => {
+test('WeChat blocks custom-scheme navigation and keeps the web fallback visible', async () => {
   const { context, elements } = createPageContext({
     userAgent: 'MicroMessenger',
     fallbackCopyResult: true
   });
-
   context.publishXhs();
+  context.doCopy();
   await flushPromises();
 
+  let prevented = false;
+  context.handleAppOpen({ preventDefault() { prevented = true; } });
+
+  assert.equal(prevented, true);
   assert.ok(elements.wechatTip.classList.contains('show'));
+  assert.match(elements.modalStatus.textContent, /微信可能拦截/);
+  assert.equal(elements.modalFallbackBtn.href, context.XHS_POI);
+});
+
+test('a real app background transition cancels the failure detector', async () => {
+  const { context, document, listeners } = createPageContext({ clipboardResult: true });
+  context.publishDouyin();
+  context.doCopy();
+  await flushPromises();
+
+  context.handleAppOpen({ preventDefault() {} });
+  assert.equal(typeof listeners.get('visibilitychange'), 'function');
+
+  document.hidden = true;
+  listeners.get('visibilitychange')();
+
+  assert.equal(context.launchTimer, null);
+  assert.equal(context.launchVisibilityHandler, null);
+  assert.equal(listeners.has('visibilitychange'), false);
 });

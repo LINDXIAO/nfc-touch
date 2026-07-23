@@ -405,12 +405,6 @@ function showPublishModal(platform, text, scheme, fallback) {
   fallbackBtn.href = fallback;
   fallbackBtn.textContent = platform === 'douyin' ? '无法打开抖音？使用网页版' : '无法打开小红书？打开酒店页面';
   document.getElementById('modalOverlay').classList.add('show');
-  // 自动选中文案
-  setTimeout(function(){
-    var ta = document.getElementById('modalText');
-    ta.focus();
-    ta.select();
-  }, 100);
   pendingJump = { scheme: scheme, fallback: fallback, text: text };
 }
 
@@ -491,39 +485,11 @@ function handleAppOpen(e) {
 
 // ====== 业务动作 ======
 function publishDouyin() {
-  copyText(TEXT_DOUYIN).then(function(ok) {
-    if (ok) {
-      showToast('文案已复制');
-    } else {
-      showToast('复制失败，请手动复制');
-    }
-    if (isWechat()) {
-      document.getElementById('wechatTip').classList.add('show');
-      showToast('微信可能拦截跳转，请在浏览器中打开本页');
-      return;
-    }
-    setTimeout(function() {
-      window.location.href = 'snssdk1128://';
-    }, 300);
-  });
+  showPublishModal('douyin', TEXT_DOUYIN, 'snssdk1128://', DOUYIN_HOME);
 }
 
 function publishXhs() {
-  copyText(TEXT_XHS).then(function(ok) {
-    if (ok) {
-      showToast('文案已复制');
-    } else {
-      showToast('复制失败，请手动复制');
-    }
-    if (isWechat()) {
-      document.getElementById('wechatTip').classList.add('show');
-      showToast('微信可能拦截跳转，请在浏览器中打开本页');
-      return;
-    }
-    setTimeout(function() {
-      window.location.href = 'xhsdiscover://post_note';
-    }, 300);
-  });
+  showPublishModal('xhs', TEXT_XHS, 'xhsdiscover://post_note', XHS_POI);
 }
 
 function searchTip(platform) {
